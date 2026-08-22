@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Order, OrderStatus } from '../types';
 import { formatLKR, formatDateTime } from '../utils/formatters';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { 
   Search, 
   Clock, 
   X, 
   AlertCircle, 
   Gamepad2, 
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 
 interface OrderTrackerModalProps {
@@ -28,6 +31,7 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
   const [searchQuery, setSearchQuery] = useState(initialOrderId);
   const [matchedOrder, setMatchedOrder] = useState<Order | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (initialOrderId) {
@@ -38,8 +42,8 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSearch = (queryStr: string = searchQuery) => {
-    const q = queryStr.trim().toLowerCase();
+  const handleSearch = async (queryStr: string = searchQuery) => {
+    const q = queryStr.trim();
     if (!q) {
       setMatchedOrder(null);
       setHasSearched(false);
@@ -47,14 +51,39 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
     }
 
     setHasSearched(true);
-    // Search by Order ID or Player ID
-    const found = orders.find(
+    setIsSearching(true);
+
+    const qLower = q.toLowerCase();
+    // 1. Search in memory orders
+    let found = orders.find(
       (o) =>
-        o.orderId.toLowerCase() === q ||
-        o.playerId.toLowerCase() === q ||
+        o.orderId.toLowerCase() === qLower ||
+        o.playerId.toLowerCase() === qLower ||
         o.customerWhatsApp.includes(q)
     );
+
+    // 2. Direct Firestore fallback query if not in memory
+    if (!found) {
+      try {
+        const docRef = doc(db, 'orders', q);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          found = { id: docSnap.id, ...docSnap.data() } as Order;
+        } else {
+          // Search by playerId or orderId field
+          const qOrder = query(collection(db, 'orders'), where('playerId', '==', q));
+          const snap = await getDocs(qOrder);
+          if (!snap.empty) {
+            found = { id: snap.docs[0].id, ...snap.docs[0].data() } as Order;
+          }
+        }
+      } catch (err) {
+        console.warn('Firestore direct query fallback error:', err);
+      }
+    }
+
     setMatchedOrder(found || null);
+    setIsSearching(false);
   };
 
   const getStatusColor = (status: OrderStatus) => {
@@ -138,9 +167,11 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
             </div>
             <button
               type="submit"
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+              disabled={isSearching}
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/20 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
             >
-              Track
+              {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              <span>Track</span>
             </button>
           </form>
 

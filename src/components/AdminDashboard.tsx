@@ -66,8 +66,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<Order | null>(null);
   const [adminNoteInput, setAdminNoteInput] = useState('');
   const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
-  const [isRetryingWhatsApp, setIsRetryingWhatsApp] = useState(false);
-  const [whatsAppSuccessBanner, setWhatsAppSuccessBanner] = useState<string | null>(null);
+  const [isRetryingEmail, setIsRetryingEmail] = useState(false);
+  const [emailSuccessBanner, setEmailSuccessBanner] = useState<string | null>(null);
 
   // Product Modal Edit / Add states
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
@@ -174,11 +174,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  const handleRetryWhatsApp = async (order: Order) => {
+  const handleRetryEmail = async (order: Order) => {
     try {
-      setIsRetryingWhatsApp(true);
-      setWhatsAppSuccessBanner(null);
-      const res = await fetch('/api/orders/retry-whatsapp', {
+      setIsRetryingEmail(true);
+      setEmailSuccessBanner(null);
+      const res = await fetch('/api/orders/retry-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order }),
@@ -187,29 +187,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       const newStatus = data.status || (data.success ? 'Sent' : 'Failed');
       await updateDoc(doc(db, 'orders', order.id), {
-        whatsappNotificationStatus: newStatus,
-        whatsappMessageId: data.messageId || '',
-        whatsappError: data.error || '',
+        emailNotificationStatus: newStatus,
+        emailMessageId: data.messageId || '',
+        emailError: data.error || '',
         updatedAt: new Date().toISOString(),
       });
 
       if (selectedOrderForDetail && selectedOrderForDetail.id === order.id) {
         setSelectedOrderForDetail({
           ...selectedOrderForDetail,
-          whatsappNotificationStatus: newStatus,
-          whatsappError: data.error,
+          emailNotificationStatus: newStatus,
+          emailError: data.error,
         });
       }
 
-      setWhatsAppSuccessBanner(
+      setEmailSuccessBanner(
         data.success
-          ? 'WhatsApp Notification sent successfully to store owner!'
-          : `WhatsApp attempt: ${data.error || 'Check WhatsApp API configuration'}`
+          ? 'Email Notification dispatched successfully to store owner inbox!'
+          : `Email attempt: ${data.error || 'Check RESEND_API_KEY and sender email configuration'}`
       );
     } catch (err: any) {
-      alert('Error retrying WhatsApp notification: ' + err.message);
+      alert('Error retrying email notification: ' + err.message);
     } finally {
-      setIsRetryingWhatsApp(false);
+      setIsRetryingEmail(false);
     }
   };
 
@@ -543,6 +543,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             {/* Main Content Pane */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+
+              {emailSuccessBanner && (
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>{emailSuccessBanner}</span>
+                  </div>
+                  <button
+                    onClick={() => setEmailSuccessBanner(null)}
+                    className="text-slate-400 hover:text-white text-xs font-bold"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
               
               {/* TAB 1: OVERVIEW & ANALYTICS */}
               {activeAdminTab === 'overview' && (
@@ -733,7 +748,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <th className="p-3.5">Items</th>
                             <th className="p-3.5">Total &amp; Payment</th>
                             <th className="p-3.5">Status</th>
-                            <th className="p-3.5">WhatsApp Notif</th>
+                            <th className="p-3.5">Email Notif</th>
                             <th className="p-3.5 text-right">Action</th>
                           </tr>
                         </thead>
@@ -804,15 +819,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <td className="p-3.5">
                                   <div className="flex items-center gap-1.5">
                                     <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
-                                      ord.whatsappNotificationStatus === 'Sent'
+                                      ord.emailNotificationStatus === 'Sent'
                                         ? 'bg-emerald-500/20 text-emerald-300'
-                                        : 'bg-red-500/20 text-red-300'
+                                        : ord.emailNotificationStatus === 'Failed'
+                                        ? 'bg-red-500/20 text-red-300'
+                                        : 'bg-amber-500/20 text-amber-300'
                                     }`}>
-                                      {ord.whatsappNotificationStatus || 'Pending'}
+                                      {ord.emailNotificationStatus || 'Pending'}
                                     </span>
                                     <button
-                                      onClick={() => handleRetryWhatsApp(ord)}
-                                      title="Retry WhatsApp notification"
+                                      onClick={() => handleRetryEmail(ord)}
+                                      title="Retry Email Notification dispatch"
                                       className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
                                     >
                                       <RotateCw className="w-3 h-3" />
@@ -1187,10 +1204,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <div className="p-5 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
               
-              {whatsAppSuccessBanner && (
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-xs text-emerald-300 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>{whatsAppSuccessBanner}</span>
+              {emailSuccessBanner && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-300 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                  <span>{emailSuccessBanner}</span>
                 </div>
               )}
 
@@ -1301,16 +1318,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
 
-              {/* WhatsApp retry action */}
+              {/* Email Notification status and retry action */}
               <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">WhatsApp Notification: {selectedOrderForDetail.whatsappNotificationStatus || 'Pending'}</span>
+                <div>
+                  <span className="text-slate-400 text-xs block">Email Notification:</span>
+                  <span className={`font-bold text-xs ${
+                    selectedOrderForDetail.emailNotificationStatus === 'Sent'
+                      ? 'text-emerald-400'
+                      : selectedOrderForDetail.emailNotificationStatus === 'Failed'
+                      ? 'text-red-400'
+                      : 'text-amber-400'
+                  }`}>
+                    {selectedOrderForDetail.emailNotificationStatus || 'Pending'}
+                  </span>
+                  {selectedOrderForDetail.emailError && (
+                    <div className="text-[10px] text-red-400 max-w-xs truncate">{selectedOrderForDetail.emailError}</div>
+                  )}
+                </div>
                 <button
-                  onClick={() => handleRetryWhatsApp(selectedOrderForDetail)}
-                  disabled={isRetryingWhatsApp}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                  onClick={() => handleRetryEmail(selectedOrderForDetail)}
+                  disabled={isRetryingEmail}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  {isRetryingWhatsApp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
-                  <span>Retry WhatsApp Dispatch</span>
+                  {isRetryingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
+                  <span>Retry Email Dispatch</span>
                 </button>
               </div>
 

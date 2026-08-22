@@ -11,6 +11,7 @@ export interface Product {
   badge?: string;
   diamonds?: number;
   active: boolean;
+  featured?: boolean;
   sortOrder: number;
   createdAt?: string;
   updatedAt?: string;
@@ -26,6 +27,7 @@ export interface PaymentMethod {
   name: string;
   provider: 'EZ CASH' | 'BANK' | 'CRYPTO' | 'CUSTOM';
   accountNumber: string;
+  phoneNumber?: string;
   accountName?: string;
   bankName?: string;
   instructions: string;
@@ -44,7 +46,7 @@ export type OrderStatus =
   | 'Rejected'
   | 'Cancelled';
 
-export type WhatsAppStatus = 'Sent' | 'Failed' | 'Pending';
+export type EmailStatus = 'Sent' | 'Failed' | 'Pending';
 
 export interface OrderItemSnapshot {
   productId: string;
@@ -52,6 +54,7 @@ export interface OrderItemSnapshot {
   category: string;
   price: number;
   quantity: number;
+  subtotal?: number;
   diamonds?: number;
 }
 
@@ -74,13 +77,14 @@ export interface Order {
     bankName?: string;
   };
   receiptUrl: string;
+  receiptPublicId?: string;
   receiptFileName?: string;
   receiptFileSize?: number;
   status: OrderStatus;
   adminNote?: string;
-  whatsappNotificationStatus: WhatsAppStatus;
-  whatsappMessageId?: string;
-  whatsappError?: string;
+  emailNotificationStatus: EmailStatus;
+  emailMessageId?: string;
+  emailError?: string;
   idempotencyKey?: string;
   createdAt: string;
   updatedAt?: string;
@@ -99,6 +103,16 @@ export interface SiteSettings {
   maintenanceMode: boolean;
   currencySymbol: string;
   currencyCode: string;
+  logo?: string;
+  favicon?: string;
+  heroDescription?: string;
+  supportWhatsApp?: string;
+  socialLinks?: {
+    facebook?: string;
+    youtube?: string;
+    discord?: string;
+    tiktok?: string;
+  };
 }
 
 export interface AdminUser {

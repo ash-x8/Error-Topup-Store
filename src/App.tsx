@@ -3,6 +3,7 @@ import { StoreProvider, useStore } from './context/StoreContext';
 import { CartProvider } from './context/CartContext';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
+import { ExpressTopupSection } from './components/ExpressTopupSection';
 import { ProductList } from './components/ProductList';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
@@ -62,6 +63,13 @@ function StoreMain() {
     }
   };
 
+  const scrollToExpress = () => {
+    const el = document.getElementById('express-topup');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const handleOrderSuccess = (newOrder: Order) => {
     setRecentOrderSuccess(newOrder);
   };
@@ -107,10 +115,17 @@ function StoreMain() {
       {/* Main Content Area */}
       <main className="flex-1">
         <HeroSection
-          onExploreProducts={scrollToProducts}
+          onExploreProducts={scrollToExpress}
           onOpenHowToOrder={() => setIsHowToOrderOpen(true)}
         />
 
+        {/* Senustore Process: Step-by-Step Express Top-Up */}
+        <ExpressTopupSection
+          onOrderSuccess={handleOrderSuccess}
+          currencySymbol={currencySymbol}
+        />
+
+        {/* Full Catalog & Multi-Product Cart Section */}
         <ProductList
           products={products}
           activeCategory={activeCategory}

@@ -202,7 +202,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         receiptFileName: receiptFile?.name,
         receiptFileSize: receiptFile?.size,
         status: 'Pending Payment Verification',
-        whatsappNotificationStatus: 'Pending',
+        emailNotificationStatus: 'Pending',
         createdAt,
       };
 
@@ -211,32 +211,33 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       // 4. Save to Cloud Firestore
       await setDoc(doc(db, 'orders', orderId), orderPayload);
 
-      // 5. Trigger server-side WhatsApp Cloud API notification via /api/send-whatsapp-order
+      // 5. Trigger server-side transactional email notification via /api/send-order-email
       try {
-        const notifRes = await fetch('/api/send-whatsapp-order', {
+        const notifRes = await fetch('/api/send-order-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ order: orderPayload }),
         });
         const notifData = await notifRes.json();
-        if (notifData?.whatsappStatus) {
-          orderPayload.whatsappNotificationStatus = notifData.whatsappStatus;
-          orderPayload.whatsappMessageId = notifData.whatsappMessageId;
-          orderPayload.whatsappError = notifData.whatsappError;
+        if (notifData) {
+          const emailStatus = notifData.emailStatus || (notifData.success ? 'Sent' : 'Failed');
+          orderPayload.emailNotificationStatus = emailStatus;
+          orderPayload.emailMessageId = notifData.emailMessageId;
+          orderPayload.emailError = notifData.emailError;
 
-          // Update the order doc with WhatsApp dispatch outcome
+          // Update the order doc with Email dispatch outcome in Firestore
           await setDoc(
             doc(db, 'orders', orderId),
             {
-              whatsappNotificationStatus: notifData.whatsappStatus,
-              whatsappMessageId: notifData.whatsappMessageId || '',
-              whatsappError: notifData.whatsappError || '',
+              emailNotificationStatus: emailStatus,
+              emailMessageId: notifData.emailMessageId || '',
+              emailError: notifData.emailError || '',
             },
             { merge: true }
           );
         }
-      } catch (waErr) {
-        console.warn('WhatsApp background notification attempt:', waErr);
+      } catch (emailErr) {
+        console.warn('Background email notification attempt:', emailErr);
       }
 
       setUploadProgress(100);
