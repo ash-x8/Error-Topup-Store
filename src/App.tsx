@@ -3,8 +3,12 @@ import { StoreProvider, useStore } from './context/StoreContext';
 import { CartProvider } from './context/CartContext';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
+import { HomeOrderSearchBar } from './components/HomeOrderSearchBar';
 import { ExpressTopupSection } from './components/ExpressTopupSection';
+import { WhyChooseUsSection } from './components/WhyChooseUsSection';
 import { ProductList } from './components/ProductList';
+import { FaqSection } from './components/FaqSection';
+import { SupportCtaSection } from './components/SupportCtaSection';
 import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
 import { OrderSuccessModal } from './components/OrderSuccessModal';
@@ -27,13 +31,25 @@ function StoreMain() {
   const [isHowToOrderOpen, setIsHowToOrderOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
 
-  // Check URL on mount and handle /admin routing
+  // Check URL on mount and handle /admin or ?orderId= routing
   useEffect(() => {
     const checkRoute = () => {
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
+      const searchParams = new URLSearchParams(window.location.search);
+      const orderParam = searchParams.get('orderId') || searchParams.get('order');
+
       if (path === '/admin' || path.startsWith('/admin/') || hash === '#admin') {
         setIsAdminOpen(true);
+      } else if (orderParam) {
+        setTrackerInitialOrderId(orderParam);
+        setIsTrackerOpen(true);
+      } else if (path.startsWith('/order/')) {
+        const orderIdFromPath = path.replace('/order/', '').trim();
+        if (orderIdFromPath) {
+          setTrackerInitialOrderId(orderIdFromPath);
+          setIsTrackerOpen(true);
+        }
       }
     };
 
@@ -80,6 +96,11 @@ function StoreMain() {
     setIsTrackerOpen(true);
   };
 
+  const handleTrackSearch = (orderIdOrUid: string) => {
+    setTrackerInitialOrderId(orderIdOrUid);
+    setIsTrackerOpen(true);
+  };
+
   if (isLoading && products.length === 0) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white space-y-4">
@@ -88,7 +109,7 @@ function StoreMain() {
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-300 font-bold">
           <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-          <span>Connecting to Cloud Firestore...</span>
+          <span>Connecting to Error Topup Store...</span>
         </div>
       </div>
     );
@@ -117,13 +138,23 @@ function StoreMain() {
         <HeroSection
           onExploreProducts={scrollToExpress}
           onOpenHowToOrder={() => setIsHowToOrderOpen(true)}
+          onOpenTracker={() => {
+            setTrackerInitialOrderId(undefined);
+            setIsTrackerOpen(true);
+          }}
         />
 
-        {/* Senustore Process: Step-by-Step Express Top-Up */}
+        {/* Live Search Bar for Quick Order Tracking */}
+        <HomeOrderSearchBar onSearch={handleTrackSearch} />
+
+        {/* Senu Store Style Frictionless Express Top-Up Section */}
         <ExpressTopupSection
           onOrderSuccess={handleOrderSuccess}
           currencySymbol={currencySymbol}
         />
+
+        {/* Trust & Reliability Pillars */}
+        <WhyChooseUsSection />
 
         {/* Full Catalog & Multi-Product Cart Section */}
         <ProductList
@@ -132,6 +163,12 @@ function StoreMain() {
           onSelectCategory={setActiveCategory}
           currencySymbol={currencySymbol}
         />
+
+        {/* FAQ Section */}
+        <FaqSection />
+
+        {/* 24/7 WhatsApp Customer Helpdesk CTA */}
+        <SupportCtaSection />
       </main>
 
       {/* Footer */}
@@ -202,3 +239,4 @@ export function App() {
 }
 
 export default App;
+

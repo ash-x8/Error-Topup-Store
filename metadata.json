@@ -1,6 +1,6 @@
 {
-  "name": "Free Fire Top-Up Store",
-  "description": "Production-ready Free Fire Top-Up and Membership Store with real-time Firestore database sync, multi-product cart, Cloudinary receipt verification, Resend transactional email notifications, and full-featured Admin Dashboard.",
+  "name": "Error Topup Store",
+  "description": "Fast, secure, and instant Free Fire Diamond and Membership top-up platform in Sri Lanka with EZ Cash & Bank Transfer support and live order tracking.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Product, Order, OrderItemSnapshot } from '../types';
-import { formatLKR, copyToClipboard, generateOrderId } from '../utils/formatters';
+import { formatLKR, copyToClipboard, generateOrderId, generateOrderWhatsAppUrl } from '../utils/formatters';
 import { uploadReceipt } from '../lib/uploadReceipt';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -31,7 +31,7 @@ export const ExpressTopupSection: React.FC<ExpressTopupSectionProps> = ({
   onOrderSuccess,
   currencySymbol,
 }) => {
-  const { products, paymentMethods } = useStore();
+  const { products, paymentMethods, siteSettings } = useStore();
 
   // Active items
   const activeProducts = products.filter((p) => p.active !== false);
@@ -57,6 +57,7 @@ export const ExpressTopupSection: React.FC<ExpressTopupSectionProps> = ({
   // Step 4 State: Customer Info & Receipt Slip
   const [customerName, setCustomerName] = useState('');
   const [customerWhatsApp, setCustomerWhatsApp] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -188,6 +189,8 @@ export const ExpressTopupSection: React.FC<ExpressTopupSectionProps> = ({
         orderId: orderId,
         customerName: customerName.trim(),
         customerWhatsApp: customerWhatsApp.trim(),
+        customerEmail: customerEmail.trim() || undefined,
+        customerEmailStatus: customerEmail.trim() ? 'Pending' : 'Skipped',
         playerId: playerId.trim(),
         nickname: nickname.trim() || undefined,
         items: [itemSnapshot],
@@ -213,20 +216,24 @@ export const ExpressTopupSection: React.FC<ExpressTopupSectionProps> = ({
       // 3. Save order to Firestore
       await setDoc(doc(db, 'orders', orderId), newOrder);
 
-      // 4. Trigger Email Notification in Background
-      fetch('/api/orders/retry-email', {
+      // 4. Trigger Email Notification in Background (Admin Alert & Customer Confirmation)
+      fetch('/api/send-order-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ order: newOrder }),
       })
         .then((res) => res.json())
         .then((resData) => {
-          if (resData.success) {
+          if (resData) {
+            const adminSent = resData.results?.adminNotification?.sent ?? resData.success;
+            const custSent = resData.results?.customerNotification?.sent;
             setDoc(
               doc(db, 'orders', orderId),
               {
-                emailNotificationStatus: 'Sent',
-                emailMessageId: resData.messageId || '',
+                emailNotificationStatus: adminSent ? 'Sent' : 'Failed',
+                emailMessageId: resData.results?.adminNotification?.messageId || '',
+                customerEmailStatus: customerEmail.trim() ? (custSent ? 'Sent' : 'Failed') : 'Skipped',
+                customerEmailMessageId: resData.results?.customerNotification?.messageId || '',
                 updatedAt: new Date().toISOString(),
               },
               { merge: true }
@@ -235,7 +242,20 @@ export const ExpressTopupSection: React.FC<ExpressTopupSectionProps> = ({
         })
         .catch((err) => console.warn('Email dispatch warning:', err));
 
-      // 5. Celebration Confetti
+      // 5. Build WhatsApp Redirect URL with uploaded image receipt and details
+      const whatsappUrl = generateOrderWhatsAppUrl(
+        newOrder,
+        selectedMethod?.accountNumber || siteSettings?.contactWhatsApp || '0772472573'
+      );
+
+      // Open WhatsApp automatically in a new window/tab
+      try {
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      } catch (openErr) {
+        console.warn('Direct WhatsApp window redirect prevented:', openErr);
+      }
+
+      // 6. Celebration Confetti
       try {
         confetti({
           particleCount: 100,
@@ -248,11 +268,11 @@ export const ExpressTopupSection: React.FC<ExpressTopupSectionProps> = ({
 
       setUploadProgress(100);
 
-      // 6. Reset form
+      // 7. Reset form
       setReceiptFile(null);
       setReceiptPreview(null);
 
-      // 7. Trigger Parent Success
+      // 8. Trigger Parent Success
       onOrderSuccess(newOrder);
     } catch (err: any) {
       console.error('Order submission error:', err);
@@ -771,6 +791,19 @@ export const ExpressTopupSection: React.FC<ExpressTopupSectionProps> = ({
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="e.g. Kasun Perera"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                  Email Address <span className="text-slate-500 font-normal lowercase">(optional — for receipt &amp; status tracking)</span>
+                </label>
+                <input
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="e.g. customer@gmail.com"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
                 />
               </div>

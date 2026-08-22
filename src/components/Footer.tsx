@@ -10,6 +10,7 @@ import {
   ExternalLink 
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { normalizeWhatsAppNumber } from '../utils/formatters';
 
 interface FooterProps {
   onOpenHowToOrder: () => void;
@@ -24,7 +25,7 @@ export const Footer: React.FC<FooterProps> = ({
 }) => {
   const { siteSettings } = useStore();
 
-  const whatsappCare = (siteSettings.contactWhatsApp || '0772472573').replace(/\D/g, '');
+  const whatsappCare = normalizeWhatsAppNumber(siteSettings.contactWhatsApp || '0772472573');
 
   return (
     <footer className="bg-slate-950 border-t border-slate-800/80 pt-12 pb-8 text-slate-400 text-xs">

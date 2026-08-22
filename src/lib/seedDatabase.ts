@@ -210,15 +210,15 @@ export const INITIAL_PAYMENT_METHODS: Omit<PaymentMethod, 'createdAt' | 'updated
 ];
 
 export const INITIAL_SITE_SETTINGS: SiteSettings = {
-  websiteName: 'Free Fire Top-Up Store',
-  tagline: 'Fast • Secure • 100% Ban-Proof Memberships & Diamonds',
+  websiteName: 'ERROR TOPUP STORE',
+  tagline: 'Fast. Secure. Simple Game Top-Ups.',
   contactWhatsApp: '0772472573',
   announcement: '⚡ Special Promo: Weekly Pass & S VIP memberships on sale! Instant dispatch within 5-15 minutes.',
   announcementActive: true,
-  heroTitle: 'Official Free Fire Top-Up & Membership Store',
-  heroSubtitle: 'Instant automated delivery for Weekly Lite, Weekly, Monthly, Level Up Passes & Diamonds directly to your Player UID.',
-  aboutText: 'The official trusted Free Fire store. We deliver 100% legitimate memberships and top-up diamonds with official server confirmation and 24/7 WhatsApp customer care.',
-  footerText: '© 2026 Free Fire Top-Up Store. All Free Fire trademarks and logos belong to Garena.',
+  heroTitle: 'ERROR TOPUP STORE',
+  heroSubtitle: 'Fast, secure, and instant delivery of Memberships, Level Up Passes, and Diamonds directly to your Player ID.',
+  aboutText: 'ERROR TOPUP STORE is Sri Lanka\'s trusted gaming top-up destination. We deliver 100% legitimate Free Fire memberships and direct diamond reloads with official UID confirmation and 24/7 WhatsApp support.',
+  footerText: '© 2026 ERROR TOPUP STORE. All game trademarks and logos belong to their respective owners.',
   maintenanceMode: false,
   currencySymbol: 'Rs.',
   currencyCode: 'LKR',

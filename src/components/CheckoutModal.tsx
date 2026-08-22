@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import { Order, OrderItemSnapshot } from '../types';
-import { formatLKR, copyToClipboard, generateOrderId } from '../utils/formatters';
+import { formatLKR, copyToClipboard, generateOrderId, generateOrderWhatsAppUrl } from '../utils/formatters';
 import { uploadReceipt } from '../lib/uploadReceipt';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -40,7 +40,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   currencySymbol,
 }) => {
   const { cart, subtotal, clearCart } = useCart();
-  const { paymentMethods, products } = useStore();
+  const { paymentMethods, products, siteSettings } = useStore();
 
   // Active payment methods
   const activeMethods = paymentMethods.filter((m) => m.active !== false);
@@ -48,6 +48,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Form states
   const [customerName, setCustomerName] = useState('');
   const [customerWhatsApp, setCustomerWhatsApp] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [playerId, setPlayerId] = useState('');
   const [nickname, setNickname] = useState('');
   const [selectedMethodId, setSelectedMethodId] = useState<string>(
@@ -185,6 +186,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         orderId,
         customerName: customerName.trim(),
         customerWhatsApp: customerWhatsApp.trim(),
+        customerEmail: customerEmail.trim() || undefined,
+        customerEmailStatus: customerEmail.trim() ? 'Pending' : 'Skipped',
         playerId: playerId.trim(),
         nickname: nickname.trim() || undefined,
         items: orderItems,
@@ -242,12 +245,27 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
       setUploadProgress(100);
 
-      // 6. Confetti & Success Transition
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
+      // 6. Generate WhatsApp URL with details and uploaded receipt image
+      const whatsappUrl = generateOrderWhatsAppUrl(
+        orderPayload,
+        selectedMethod?.accountNumber || siteSettings?.contactWhatsApp || '0772472573'
+      );
+
+      // Open WhatsApp automatically
+      try {
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      } catch (openErr) {
+        console.warn('Direct WhatsApp window redirect prevented:', openErr);
+      }
+
+      // 7. Confetti & Success Transition
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      } catch (e) {}
 
       clearCart();
       onClose();
@@ -405,6 +423,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   placeholder="e.g. ꧁ঔৣ☬Shadow☬ঔৣ꧂"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+
+              {/* Email Address (Optional) */}
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
+                  <span>Email Address</span>
+                  <span className="text-[10px] text-slate-500">Optional (for tracking &amp; order confirmation receipts)</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="e.g. customer@gmail.com"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
                 />
               </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Product, PaymentMethod, Order, OrderStatus, ProductCategory, SiteSettings } from '../types';
-import { formatLKR, formatDateTime } from '../utils/formatters';
+import { formatLKR, formatDateTime, normalizeWhatsAppNumber } from '../utils/formatters';
 import { doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
@@ -136,15 +136,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
     try {
       setIsUpdatingOrder(true);
+      const currentOrder = orders.find((o) => o.id === orderId);
+      const previousStatus = currentOrder?.status;
+
       await updateDoc(doc(db, 'orders', orderId), {
         status: newStatus,
         updatedAt: new Date().toISOString(),
       });
+
       if (selectedOrderForDetail && selectedOrderForDetail.id === orderId) {
         setSelectedOrderForDetail({
           ...selectedOrderForDetail,
           status: newStatus,
         });
+      }
+
+      // Trigger automatic status update email notification to customer & admin
+      if (currentOrder) {
+        const orderForEmail = { ...currentOrder, status: newStatus };
+        fetch('/api/orders/status-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order: orderForEmail,
+            newStatus,
+            previousStatus,
+          }),
+        })
+          .then((r) => r.json())
+          .then((emailRes) => {
+            if (emailRes.results?.customer?.sent) {
+              setEmailSuccessBanner(`Status updated to "${newStatus}" and notification email sent to ${currentOrder.customerEmail}!`);
+            }
+          })
+          .catch((err) => console.warn('Status change email warning:', err));
       }
     } catch (err: any) {
       alert('Failed to update status: ' + err.message);
@@ -1226,7 +1251,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div>
                   <span className="text-slate-500 block text-[10px]">WhatsApp</span>
                   <a
-                    href={`https://wa.me/${selectedOrderForDetail.customerWhatsApp.replace(/\D/g, '')}`}
+                    href={`https://wa.me/${normalizeWhatsAppNumber(selectedOrderForDetail.customerWhatsApp)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-emerald-400 font-semibold hover:underline flex items-center gap-1"
@@ -1239,6 +1264,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <span className="text-slate-500 block text-[10px]">Nickname</span>
                   <span className="text-slate-300">{selectedOrderForDetail.nickname || 'None'}</span>
                 </div>
+                {selectedOrderForDetail.customerEmail && (
+                  <div className="col-span-2">
+                    <span className="text-slate-500 block text-[10px]">Customer Email</span>
+                    <span className="text-cyan-400 font-mono text-xs">{selectedOrderForDetail.customerEmail}</span>
+                  </div>
+                )}
               </div>
 
               {/* Products Breakdown */}

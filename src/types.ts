@@ -41,12 +41,31 @@ export interface PaymentMethod {
 export type OrderStatus =
   | 'Pending Payment Verification'
   | 'Payment Received'
+  | 'Payment Under Review'
   | 'Processing'
   | 'Completed'
   | 'Rejected'
-  | 'Cancelled';
+  | 'Failed'
+  | 'Cancelled'
+  | 'Refunded'
+  | 'PENDING'
+  | 'PAYMENT_PENDING'
+  | 'PAYMENT_REVIEW'
+  | 'FAILED'
+  | 'REFUNDED';
 
-export type EmailStatus = 'Sent' | 'Failed' | 'Pending';
+export type EmailStatus = 'Sent' | 'Failed' | 'Pending' | 'Skipped' | 'None';
+
+export interface OrderNotificationRecord {
+  id?: string;
+  type: 'admin_new_order' | 'admin_payment_proof' | 'customer_confirmation' | 'customer_status_update' | 'admin_alert';
+  recipient: string;
+  subject: string;
+  status: 'Sent' | 'Failed' | 'Simulated';
+  sentAt: string;
+  messageId?: string;
+  error?: string;
+}
 
 export interface OrderItemSnapshot {
   productId: string;
@@ -63,6 +82,7 @@ export interface Order {
   orderId: string;
   customerName: string;
   customerWhatsApp: string;
+  customerEmail?: string;
   playerId: string;
   nickname?: string;
   items: OrderItemSnapshot[];
@@ -85,6 +105,11 @@ export interface Order {
   emailNotificationStatus: EmailStatus;
   emailMessageId?: string;
   emailError?: string;
+  customerEmailStatus?: EmailStatus;
+  customerEmailMessageId?: string;
+  customerEmailError?: string;
+  lastCustomerNotifiedStatus?: string;
+  notificationHistory?: OrderNotificationRecord[];
   idempotencyKey?: string;
   createdAt: string;
   updatedAt?: string;

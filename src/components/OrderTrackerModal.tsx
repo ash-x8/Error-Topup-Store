@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Order, OrderStatus } from '../types';
-import { formatLKR, formatDateTime } from '../utils/formatters';
+import { formatLKR, formatDateTime, generateOrderWhatsAppUrl } from '../utils/formatters';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { 
@@ -11,7 +11,8 @@ import {
   AlertCircle, 
   Gamepad2, 
   ExternalLink,
-  Loader2
+  Loader2,
+  MessageCircle
 } from 'lucide-react';
 
 interface OrderTrackerModalProps {
@@ -27,7 +28,7 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
   initialOrderId = '',
   currencySymbol,
 }) => {
-  const { orders } = useStore();
+  const { orders, siteSettings } = useStore();
   const [searchQuery, setSearchQuery] = useState(initialOrderId);
   const [matchedOrder, setMatchedOrder] = useState<Order | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
@@ -285,7 +286,7 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                 </div>
               )}
 
-              {/* Receipt Link */}
+              {/* Receipt Link & WhatsApp Action */}
               {matchedOrder.receiptUrl && (
                 <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
                   <span className="text-slate-400">Uploaded Payment Receipt:</span>
@@ -300,6 +301,22 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                   </a>
                 </div>
               )}
+
+              <a
+                href={generateOrderWhatsAppUrl(
+                  matchedOrder,
+                  matchedOrder.paymentDetailsSnapshot?.accountNumber ||
+                    siteSettings.contactWhatsApp ||
+                    '0772472573'
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-emerald-600/20"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Contact Agent on WhatsApp with Slip</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
 
             </div>
           ) : hasSearched ? (
