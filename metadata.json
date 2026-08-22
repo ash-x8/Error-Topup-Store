@@ -1,0 +1,8 @@
+{
+  "name": "Free Fire Top-Up Store",
+  "description": "Production-ready Free Fire Top-Up and Membership Store with real-time Firestore database sync, multi-product cart, automated receipt verification, WhatsApp notifications, and full-featured Admin Dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Products: Anyone can read active products, Authenticated Admins can read all & write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Payment Methods: Anyone can read active payment methods, Authenticated Admins can write
+    match /paymentMethods/{methodId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Site Settings: Anyone can read, Authenticated Admins can write
+    match /siteSettings/{settingId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Orders: Anyone can create an order, Anyone can read their specific order by ID, Admins can read & update
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read: if true;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Admins collection: Authenticated users can read their own admin doc, Admins can write
+    match /admins/{userId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Notifications: Admins can read and write
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

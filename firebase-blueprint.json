@@ -1,0 +1,103 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Free Fire top-up products and memberships",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["membership", "level_up_pass", "topup"] },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "description": { "type": "string" },
+        "image": { "type": "string" },
+        "badge": { "type": "string" },
+        "active": { "type": "boolean" },
+        "sortOrder": { "type": "number" },
+        "diamonds": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "price", "active"]
+    },
+    "PaymentMethod": {
+      "title": "PaymentMethod",
+      "description": "Available payment channels",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "provider": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "accountName": { "type": "string" },
+        "bankName": { "type": "string" },
+        "instructions": { "type": "string" },
+        "icon": { "type": "string" },
+        "active": { "type": "boolean" },
+        "sortOrder": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "provider", "active"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase orders",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerWhatsApp": { "type": "string" },
+        "playerId": { "type": "string" },
+        "nickname": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethodId": { "type": "string" },
+        "paymentMethodName": { "type": "string" },
+        "paymentDetailsSnapshot": { "type": "object" },
+        "receiptUrl": { "type": "string" },
+        "receiptFileName": { "type": "string" },
+        "receiptFileSize": { "type": "number" },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Pending Payment Verification",
+            "Payment Received",
+            "Processing",
+            "Completed",
+            "Rejected",
+            "Cancelled"
+          ]
+        },
+        "adminNote": { "type": "string" },
+        "whatsappNotificationStatus": { "type": "string", "enum": ["Sent", "Failed", "Pending"] },
+        "whatsappMessageId": { "type": "string" },
+        "whatsappError": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["orderId", "customerName", "customerWhatsApp", "playerId", "items", "total", "status", "createdAt"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Store configuration and dynamic content",
+      "type": "object",
+      "properties": {
+        "websiteName": { "type": "string" },
+        "tagline": { "type": "string" },
+        "contactWhatsApp": { "type": "string" },
+        "announcement": { "type": "string" },
+        "announcementActive": { "type": "boolean" },
+        "heroTitle": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "aboutText": { "type": "string" },
+        "footerText": { "type": "string" },
+        "maintenanceMode": { "type": "boolean" },
+        "currencySymbol": { "type": "string" },
+        "currencyCode": { "type": "string" }
+      }
+    }
+  }
+}
